@@ -1,5 +1,7 @@
 package cberrors
 
+import "sync"
+
 type ErrorsContainer struct {
 	providers      []ErrorProvider
 	suppressErrors bool
@@ -23,11 +25,15 @@ func (c *ErrorsContainer) AddProvider(provider ErrorProvider) {
 
 func (c *ErrorsContainer) MainDefer() {
 	c.Recover()
+	wg := sync.WaitGroup{}
 	for _, provider := range c.providers {
+		wg.Add(1)
 		go func() {
 			provider.Defer()
+			wg.Done()
 		}()
 	}
+	wg.Wait()
 }
 
 func (c *ErrorsContainer) Suppress() {
